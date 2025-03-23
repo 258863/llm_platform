@@ -1,0 +1,65 @@
+# 服务器配置
+server:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+
+# 模型配置
+models:
+  default: "deepseek-r1"
+  available:
+    - name: "deepseek-r1"
+      type: "ollama"
+      size: "7b"
+      gpu_memory: 16
+      max_length: 2048
+      temperature: 0.7
+      top_p: 0.9
+    - name: "chatglm3"
+      type: "transformers"
+      size: "6b"
+      gpu_memory: 16
+      max_length: 2048
+      temperature: 0.7
+      top_p: 0.9
+    - name: "qwen"
+      type: "transformers"
+      size: "7b"
+      gpu_memory: 16
+      max_length: 2048
+      temperature: 0.7
+      top_p: 0.9
+
+# GPU配置
+gpu:
+  devices: [0, 1, 2, 3]
+  memory_fraction: 0.9
+  parallel_inference: true
+
+# 知识库配置
+knowledge_base:
+  enabled: true
+  vector_db:
+    type: "chroma"
+    path: "./data/vector_db"
+  document_store:
+    path: "./data/documents"
+    supported_formats:
+      - "pdf"
+      - "docx"
+      - "md"
+      - "html"
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "./logs/app.log"
+  max_size: 100
+  backup_count: 10
+
+# 安全配置
+security:
+  api_key: "your-api-key"
+  rate_limit:
+    requests: 100
+    period: 60 

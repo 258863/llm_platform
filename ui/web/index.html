@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .chat-container {
+            height: calc(100vh - 200px);
+        }
+        .message {
+            max-width: 80%;
+        }
+        .user-message {
+            margin-left: auto;
+        }
+        .assistant-message {
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">LLM Platform</h1>
+            <p class="text-gray-600">Large Language Model Service Platform</p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Sidebar -->
+            <div class="md:col-span-1 bg-white rounded-lg shadow p-4">
+                <h2 class="text-xl font-semibold mb-4">Settings</h2>
+                
+                <!-- Model Selection -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
+                    <select id="model-select" class="w-full p-2 border rounded">
+                        <option value="">Loading models...</option>
+                    </select>
+                </div>
+
+                <!-- Knowledge Base Toggle -->
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="knowledge-base-toggle" class="form-checkbox h-4 w-4 text-blue-600">
+                        <span class="ml-2 text-sm text-gray-700">Use Knowledge Base</span>
+                    </label>
+                </div>
+
+                <!-- Knowledge Base Management -->
+                <div id="knowledge-base-section" class="hidden">
+                    <h3 class="text-lg font-medium mb-2">Knowledge Base</h3>
+                    
+                    <!-- Upload Document -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Upload Document</label>
+                        <input type="file" id="document-upload" class="w-full p-2 border rounded">
+                        <button id="upload-btn" class="mt-2 w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                            Upload
+                        </button>
+                    </div>
+
+                    <!-- Collections -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Collections</label>
+                        <div id="collections-list" class="space-y-2">
+                            <!-- Collections will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Area -->
+            <div class="md:col-span-3 bg-white rounded-lg shadow">
+                <!-- Chat Messages -->
+                <div id="chat-messages" class="chat-container overflow-y-auto p-4 space-y-4">
+                    <!-- Messages will be added here -->
+                </div>
+
+                <!-- Input Area -->
+                <div class="border-t p-4">
+                    <div class="flex space-x-4">
+                        <textarea
+                            id="user-input"
+                            class="flex-1 p-2 border rounded-lg resize-none"
+                            rows="3"
+                            placeholder="Type your message here..."
+                        ></textarea>
+                        <button
+                            id="send-btn"
+                            class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600"
+                        >
+                            Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_BASE_URL = 'http://localhost:8000';
+
+        // DOM Elements
+        const modelSelect = document.getElementById('model-select');
+        const knowledgeBaseToggle = document.getElementById('knowledge-base-toggle');
+        const knowledgeBaseSection = document.getElementById('knowledge-base-section');
+        const documentUpload = document.getElementById('document-upload');
+        const uploadBtn = document.getElementById('upload-btn');
+        const collectionsList = document.getElementById('collections-list');
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // State
+        let currentModel = '';
+        let collections = [];
+
+        // Initialize
+        async function initialize() {
+            await loadModels();
+            await loadCollections();
+            setupEventListeners();
+        }
+
+        // Load Models
+        async function loadModels() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/models`);
+                const models = await response.json();
+                
+                modelSelect.innerHTML = models.map(model => `
+                    <option value="${model.name}">${model.name}</option>
+                `).join('');
+                
+                if (models.length > 0) {
+                    currentModel = models[0].name;
+                }
+            } catch (error) {
+                console.error('Error loading models:', error);
+            }
+        }
+
+        // Load Collections
+        async function loadCollections() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/knowledge-base/collections`);
+                collections = await response.json();
+                
+                collectionsList.innerHTML = collections.map(collection => `
+                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span>${collection}</span>
+                        <button
+                            onclick="deleteCollection('${collection}')"
+                            class="text-red-500 hover:text-red-700"
+                        >
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading collections:', error);
+            }
+        }
+
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Model Selection
+            modelSelect.addEventListener('change', (e) => {
+                currentModel = e.target.value;
+            });
+
+            // Knowledge Base Toggle
+            knowledgeBaseToggle.addEventListener('change', (e) => {
+                knowledgeBaseSection.classList.toggle('hidden', !e.target.checked);
+            });
+
+            // Document Upload
+            uploadBtn.addEventListener('click', async () => {
+                const file = documentUpload.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/knowledge-base/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        await loadCollections();
+                        documentUpload.value = '';
+                    } else {
+                        throw new Error('Upload failed');
+                    }
+                } catch (error) {
+                    console.error('Error uploading document:', error);
+                }
+            });
+
+            // Send Message
+            sendBtn.addEventListener('click', sendMessage);
+            userInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        }
+
+        // Send Message
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Add user message to chat
+            addMessage(message, 'user');
+            userInput.value = '';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: message,
+                        model: currentModel,
+                        use_knowledge_base: knowledgeBaseToggle.checked
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Add assistant message to chat
+                addMessage(data.response, 'assistant');
+                
+                // If knowledge base was used, show results
+                if (data.knowledge_base_used && data.knowledge_base_results) {
+                    addKnowledgeBaseResults(data.knowledge_base_results);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                addMessage('Sorry, there was an error processing your request.', 'assistant');
+            }
+        }
+
+        // Add Message to Chat
+        function addMessage(content, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message p-4 rounded-lg ${
+                type === 'user' ? 'user-message bg-blue-100' : 'assistant-message bg-gray-100'
+            }`;
+            messageDiv.textContent = content;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Add Knowledge Base Results
+        function addKnowledgeBaseResults(results) {
+            const resultsDiv = document.createElement('div');
+            resultsDiv.className = 'message assistant-message p-4 rounded-lg bg-green-50';
+            
+            resultsDiv.innerHTML = `
+                <h4 class="font-semibold mb-2">Knowledge Base Results:</h4>
+                <div class="space-y-2">
+                    ${results.map(result => `
+                        <div class="text-sm">
+                            <p class="font-medium">Source: ${result.metadata.source}</p>
+                            <p class="text-gray-600">${result.content}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            chatMessages.appendChild(resultsDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Delete Collection
+        async function deleteCollection(collectionName) {
+            if (!confirm(`Are you sure you want to delete collection "${collectionName}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/knowledge-base/collections/${collectionName}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    await loadCollections();
+                } else {
+                    throw new Error('Delete failed');
+                }
+            } catch (error) {
+                console.error('Error deleting collection:', error);
+            }
+        }
+
+        // Initialize the application
+        initialize();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">LLM Platform</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/chat">Chat</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/knowledge-base">Knowledge Base</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/system-monitor">System Monitor</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Collections List -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Collections</h5>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                            <i class="bi bi-upload"></i> Upload
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group" id="collections-list">
+                            {% for collection in collections %}
+                            <a href="#" class="list-group-item list-group-item-action" data-collection-id="{{ collection.id }}">
+                                {{ collection.name }}
+                                <span class="badge bg-primary rounded-pill float-end">{{ collection.document_count }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents List -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Documents</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="documents-list">
+                            <!-- Documents will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal fade" id="uploadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Document</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="upload-form">
+                        <div class="mb-3">
+                            <label for="collection-name" class="form-label">Collection Name</label>
+                            <input type="text" class="form-control" id="collection-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="document-file" class="form-label">Document</label>
+                            <input type="file" class="form-control" id="document-file" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="upload-button">Upload</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">© 2024 LLM Platform. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load documents for selected collection
+        async function loadDocuments(collectionId) {
+            try {
+                const response = await fetch(`/api/collections/${collectionId}/documents`);
+                const documents = await response.json();
+                
+                const documentsList = document.getElementById('documents-list');
+                documentsList.innerHTML = '';
+                
+                documents.forEach(doc => {
+                    const docElement = document.createElement('div');
+                    docElement.className = 'card mb-3';
+                    docElement.innerHTML = `
+                        <div class="card-body">
+                            <h6 class="card-title">${doc.name}</h6>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    Size: ${formatBytes(doc.size)} | 
+                                    Uploaded: ${new Date(doc.upload_time).toLocaleString()}
+                                </small>
+                            </p>
+                            <button class="btn btn-danger btn-sm" onclick="deleteDocument('${collectionId}', '${doc.id}')">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </div>
+                    `;
+                    documentsList.appendChild(docElement);
+                });
+            } catch (error) {
+                console.error('Failed to load documents:', error);
+                alert('Failed to load documents');
+            }
+        }
+
+        // Format bytes to human readable size
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Delete document
+        async function deleteDocument(collectionId, documentId) {
+            if (!confirm('Are you sure you want to delete this document?')) return;
+            
+            try {
+                const response = await fetch(`/api/collections/${collectionId}/documents/${documentId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadDocuments(collectionId);
+                } else {
+                    throw new Error('Failed to delete document');
+                }
+            } catch (error) {
+                console.error('Failed to delete document:', error);
+                alert('Failed to delete document');
+            }
+        }
+
+        // Upload document
+        document.getElementById('upload-button').addEventListener('click', async () => {
+            const collectionName = document.getElementById('collection-name').value;
+            const fileInput = document.getElementById('document-file');
+            const file = fileInput.files[0];
+            
+            if (!collectionName || !file) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('collection_name', collectionName);
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/collections', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const collection = await response.json();
+                    // Add new collection to list
+                    const collectionsList = document.getElementById('collections-list');
+                    const collectionElement = document.createElement('a');
+                    collectionElement.href = '#';
+                    collectionElement.className = 'list-group-item list-group-item-action';
+                    collectionElement.dataset.collectionId = collection.id;
+                    collectionElement.innerHTML = `
+                        ${collection.name}
+                        <span class="badge bg-primary rounded-pill float-end">1</span>
+                    `;
+                    collectionsList.appendChild(collectionElement);
+                    
+                    // Close modal and reset form
+                    bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+                    document.getElementById('upload-form').reset();
+                    
+                    // Load documents for new collection
+                    loadDocuments(collection.id);
+                } else {
+                    throw new Error('Failed to upload document');
+                }
+            } catch (error) {
+                console.error('Failed to upload document:', error);
+                alert('Failed to upload document');
+            }
+        });
+
+        // Collection selection
+        document.getElementById('collections-list').addEventListener('click', (e) => {
+            e.preventDefault();
+            const collectionItem = e.target.closest('.list-group-item');
+            if (collectionItem) {
+                const collectionId = collectionItem.dataset.collectionId;
+                loadDocuments(collectionId);
+                
+                // Update active state
+                document.querySelectorAll('.list-group-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                collectionItem.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html> 

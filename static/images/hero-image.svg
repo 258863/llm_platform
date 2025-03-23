@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="800" height="600" fill="#f8f9fa"/>
+    
+    <!-- Brain Icon -->
+    <g transform="translate(400, 300)">
+        <!-- Brain Shape -->
+        <path d="M-100,-100 C-150,-50 -150,50 -100,100 C-50,150 50,150 100,100 C150,50 150,-50 100,-100 C50,-150 -50,-150 -100,-100" 
+              fill="#007bff" opacity="0.1"/>
+        
+        <!-- Neural Network Lines -->
+        <g stroke="#007bff" stroke-width="2" fill="none">
+            <!-- Input Layer -->
+            <circle cx="-150" cy="-100" r="10" fill="#007bff"/>
+            <circle cx="-150" cy="0" r="10" fill="#007bff"/>
+            <circle cx="-150" cy="100" r="10" fill="#007bff"/>
+            
+            <!-- Hidden Layer -->
+            <circle cx="0" cy="-100" r="10" fill="#007bff"/>
+            <circle cx="0" cy="0" r="10" fill="#007bff"/>
+            <circle cx="0" cy="100" r="10" fill="#007bff"/>
+            
+            <!-- Output Layer -->
+            <circle cx="150" cy="-100" r="10" fill="#007bff"/>
+            <circle cx="150" cy="0" r="10" fill="#007bff"/>
+            <circle cx="150" cy="100" r="10" fill="#007bff"/>
+            
+            <!-- Connections -->
+            <line x1="-140" y1="-100" x2="-10" y2="-100"/>
+            <line x1="-140" y1="-100" x2="-10" y2="0"/>
+            <line x1="-140" y1="-100" x2="-10" y2="100"/>
+            
+            <line x1="-140" y1="0" x2="-10" y2="-100"/>
+            <line x1="-140" y1="0" x2="-10" y2="0"/>
+            <line x1="-140" y1="0" x2="-10" y2="100"/>
+            
+            <line x1="-140" y1="100" x2="-10" y2="-100"/>
+            <line x1="-140" y1="100" x2="-10" y2="0"/>
+            <line x1="-140" y1="100" x2="-10" y2="100"/>
+            
+            <line x1="10" y1="-100" x2="140" y2="-100"/>
+            <line x1="10" y1="-100" x2="140" y2="0"/>
+            <line x1="10" y1="-100" x2="140" y2="100"/>
+            
+            <line x1="10" y1="0" x2="140" y2="-100"/>
+            <line x1="10" y1="0" x2="140" y2="0"/>
+            <line x1="10" y1="0" x2="140" y2="100"/>
+            
+            <line x1="10" y1="100" x2="140" y2="-100"/>
+            <line x1="10" y1="100" x2="140" y2="0"/>
+            <line x1="10" y1="100" x2="140" y2="100"/>
+        </g>
+        
+        <!-- Pulse Animation -->
+        <circle cx="0" cy="0" r="5" fill="#007bff">
+            <animate attributeName="r" values="5;10;5" dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
+        </circle>
+    </g>
+    
+    <!-- Decorative Elements -->
+    <g fill="#007bff" opacity="0.1">
+        <!-- Top Left -->
+        <circle cx="100" cy="100" r="50"/>
+        <circle cx="150" cy="150" r="30"/>
+        
+        <!-- Top Right -->
+        <circle cx="700" cy="100" r="40"/>
+        <circle cx="650" cy="150" r="25"/>
+        
+        <!-- Bottom Left -->
+        <circle cx="100" cy="500" r="35"/>
+        <circle cx="150" cy="450" r="45"/>
+        
+        <!-- Bottom Right -->
+        <circle cx="700" cy="500" r="40"/>
+        <circle cx="650" cy="450" r="30"/>
+    </g>
+</svg> 

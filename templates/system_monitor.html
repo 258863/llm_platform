@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">LLM Platform</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/chat">Chat</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/knowledge-base">Knowledge Base</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/system-monitor">System Monitor</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <!-- System Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">CPU Usage</h6>
+                        <div class="d-flex align-items-center">
+                            <div class="progress flex-grow-1 me-3" style="height: 20px;">
+                                <div id="cpu-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <span id="cpu-value">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">Memory Usage</h6>
+                        <div class="d-flex align-items-center">
+                            <div class="progress flex-grow-1 me-3" style="height: 20px;">
+                                <div id="memory-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <span id="memory-value">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">Disk Usage</h6>
+                        <div class="d-flex align-items-center">
+                            <div class="progress flex-grow-1 me-3" style="height: 20px;">
+                                <div id="disk-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <span id="disk-value">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">GPU Usage</h6>
+                        <div class="d-flex align-items-center">
+                            <div class="progress flex-grow-1 me-3" style="height: 20px;">
+                                <div id="gpu-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <span id="gpu-value">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">CPU & Memory Usage</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="cpu-memory-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Disk & Network Usage</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="disk-network-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Process List -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Running Processes</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>PID</th>
+                                        <th>Name</th>
+                                        <th>CPU %</th>
+                                        <th>Memory %</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="process-list">
+                                    <!-- Processes will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">© 2024 LLM Platform. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    <script>
+        // Initialize charts
+        const cpuMemoryCtx = document.getElementById('cpu-memory-chart').getContext('2d');
+        const diskNetworkCtx = document.getElementById('disk-network-chart').getContext('2d');
+
+        const cpuMemoryChart = new Chart(cpuMemoryCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'CPU Usage',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }, {
+                    label: 'Memory Usage',
+                    data: [],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        const diskNetworkChart = new Chart(diskNetworkCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Disk Usage',
+                    data: [],
+                    borderColor: 'rgb(54, 162, 235)',
+                    tension: 0.1
+                }, {
+                    label: 'Network Usage',
+                    data: [],
+                    borderColor: 'rgb(255, 206, 86)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        // WebSocket connection
+        let ws = null;
+        
+        function connectWebSocket() {
+            ws = new WebSocket(`ws://${window.location.host}/ws/system-monitor`);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                updateSystemInfo(data);
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                setTimeout(connectWebSocket, 1000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        // Update system information
+        function updateSystemInfo(data) {
+            // Update progress bars
+            document.getElementById('cpu-progress').style.width = `${data.cpu.percent}%`;
+            document.getElementById('cpu-value').textContent = `${data.cpu.percent}%`;
+            
+            document.getElementById('memory-progress').style.width = `${data.memory.percent}%`;
+            document.getElementById('memory-value').textContent = `${data.memory.percent}%`;
+            
+            document.getElementById('disk-progress').style.width = `${data.disk.percent}%`;
+            document.getElementById('disk-value').textContent = `${data.disk.percent}%`;
+            
+            if (data.gpu) {
+                document.getElementById('gpu-progress').style.width = `${data.gpu.percent}%`;
+                document.getElementById('gpu-value').textContent = `${data.gpu.percent}%`;
+            }
+
+            // Update charts
+            const timestamp = new Date().toLocaleTimeString();
+            
+            cpuMemoryChart.data.labels.push(timestamp);
+            cpuMemoryChart.data.datasets[0].data.push(data.cpu.percent);
+            cpuMemoryChart.data.datasets[1].data.push(data.memory.percent);
+            
+            diskNetworkChart.data.labels.push(timestamp);
+            diskNetworkChart.data.datasets[0].data.push(data.disk.percent);
+            diskNetworkChart.data.datasets[1].data.push(data.network.percent);
+
+            // Keep only last 10 data points
+            if (cpuMemoryChart.data.labels.length > 10) {
+                cpuMemoryChart.data.labels.shift();
+                cpuMemoryChart.data.datasets[0].data.shift();
+                cpuMemoryChart.data.datasets[1].data.shift();
+                diskNetworkChart.data.labels.shift();
+                diskNetworkChart.data.datasets[0].data.shift();
+                diskNetworkChart.data.datasets[1].data.shift();
+            }
+
+            cpuMemoryChart.update();
+            diskNetworkChart.update();
+
+            // Update process list
+            const processList = document.getElementById('process-list');
+            processList.innerHTML = '';
+            
+            data.processes.forEach(process => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${process.pid}</td>
+                    <td>${process.name}</td>
+                    <td>${process.cpu_percent.toFixed(1)}%</td>
+                    <td>${process.memory_percent.toFixed(1)}%</td>
+                    <td>${process.status}</td>
+                `;
+                processList.appendChild(row);
+            });
+        }
+
+        // Connect WebSocket
+        connectWebSocket();
+    </script>
+</body>
+</html> 

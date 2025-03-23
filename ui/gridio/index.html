@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Platform - GridIO</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+        }
+        .grid-item {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .grid-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .grid-item-content {
+            height: 200px;
+            overflow-y: auto;
+        }
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .status-active {
+            background-color: #10B981;
+        }
+        .status-inactive {
+            background-color: #EF4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">LLM Platform - GridIO</h1>
+            <p class="text-gray-600">Grid-based Interface for Model Management</p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="grid-container">
+            <!-- Model Status -->
+            <div class="grid-item">
+                <div class="grid-item-header">
+                    <h2 class="text-xl font-semibold">Model Status</h2>
+                    <button id="refresh-models" class="text-blue-500 hover:text-blue-700">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div id="model-status" class="grid-item-content">
+                    <!-- Model status will be listed here -->
+                </div>
+            </div>
+
+            <!-- GPU Usage -->
+            <div class="grid-item">
+                <div class="grid-item-header">
+                    <h2 class="text-xl font-semibold">GPU Usage</h2>
+                    <button id="refresh-gpu" class="text-blue-500 hover:text-blue-700">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div id="gpu-usage" class="grid-item-content">
+                    <!-- GPU usage will be displayed here -->
+                </div>
+            </div>
+
+            <!-- Knowledge Base Status -->
+            <div class="grid-item">
+                <div class="grid-item-header">
+                    <h2 class="text-xl font-semibold">Knowledge Base</h2>
+                    <button id="refresh-kb" class="text-blue-500 hover:text-blue-700">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div id="kb-status" class="grid-item-content">
+                    <!-- Knowledge base status will be shown here -->
+                </div>
+            </div>
+
+            <!-- System Resources -->
+            <div class="grid-item">
+                <div class="grid-item-header">
+                    <h2 class="text-xl font-semibold">System Resources</h2>
+                    <button id="refresh-resources" class="text-blue-500 hover:text-blue-700">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div id="system-resources" class="grid-item-content">
+                    <!-- System resources will be displayed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_BASE_URL = 'http://localhost:8000';
+
+        // DOM Elements
+        const modelStatus = document.getElementById('model-status');
+        const gpuUsage = document.getElementById('gpu-usage');
+        const kbStatus = document.getElementById('kb-status');
+        const systemResources = document.getElementById('system-resources');
+
+        // Refresh Buttons
+        document.getElementById('refresh-models').addEventListener('click', updateModelStatus);
+        document.getElementById('refresh-gpu').addEventListener('click', updateGPUUsage);
+        document.getElementById('refresh-kb').addEventListener('click', updateKBStatus);
+        document.getElementById('refresh-resources').addEventListener('click', updateSystemResources);
+
+        // Update Functions
+        async function updateModelStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/models`);
+                const models = await response.json();
+                
+                modelStatus.innerHTML = models.map(model => `
+                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded mb-2">
+                        <div class="flex items-center">
+                            <span class="status-indicator ${model.loaded ? 'status-active' : 'status-inactive'}"></span>
+                            <span>${model.name}</span>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            ${model.loaded ? 'Loaded' : 'Not Loaded'}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error updating model status:', error);
+            }
+        }
+
+        async function updateGPUUsage() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/system/gpu`);
+                const gpuData = await response.json();
+                
+                gpuUsage.innerHTML = gpuData.map(gpu => `
+                    <div class="p-2 bg-gray-50 rounded mb-2">
+                        <div class="flex justify-between mb-1">
+                            <span>GPU ${gpu.id}</span>
+                            <span>${gpu.memory_used}MB / ${gpu.memory_total}MB</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: ${(gpu.memory_used / gpu.memory_total) * 100}%"></div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error updating GPU usage:', error);
+            }
+        }
+
+        async function updateKBStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/knowledge-base/collections`);
+                const collections = await response.json();
+                
+                kbStatus.innerHTML = collections.map(collection => `
+                    <div class="p-2 bg-gray-50 rounded mb-2">
+                        <div class="flex justify-between">
+                            <span>${collection}</span>
+                            <span class="text-sm text-gray-600">${collection.document_count} documents</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error updating knowledge base status:', error);
+            }
+        }
+
+        async function updateSystemResources() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/system/resources`);
+                const resources = await response.json();
+                
+                systemResources.innerHTML = `
+                    <div class="p-2 bg-gray-50 rounded mb-2">
+                        <div class="flex justify-between mb-1">
+                            <span>CPU Usage</span>
+                            <span>${resources.cpu_usage}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: ${resources.cpu_usage}%"></div>
+                        </div>
+                    </div>
+                    <div class="p-2 bg-gray-50 rounded mb-2">
+                        <div class="flex justify-between mb-1">
+                            <span>Memory Usage</span>
+                            <span>${resources.memory_used}GB / ${resources.memory_total}GB</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: ${(resources.memory_used / resources.memory_total) * 100}%"></div>
+                        </div>
+                    </div>
+                    <div class="p-2 bg-gray-50 rounded mb-2">
+                        <div class="flex justify-between mb-1">
+                            <span>Disk Usage</span>
+                            <span>${resources.disk_used}GB / ${resources.disk_total}GB</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: ${(resources.disk_used / resources.disk_total) * 100}%"></div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error updating system resources:', error);
+            }
+        }
+
+        // Initial Update
+        updateModelStatus();
+        updateGPUUsage();
+        updateKBStatus();
+        updateSystemResources();
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            updateModelStatus();
+            updateGPUUsage();
+            updateKBStatus();
+            updateSystemResources();
+        }, 30000);
+    </script>
+</body>
+</html> 
